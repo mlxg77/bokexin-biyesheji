@@ -1,0 +1,115 @@
+<link rel="stylesheet" href="../css/silkstyle/silkstyle.css">
+
+
+<div class="layuimini-main">
+    <div class="layui-form layuimini-form" lay-filter="userSettingForm" style="width: 80%;margin-top: 20px;">
+        <div class="layui-form-item">
+            <label class="layui-form-label required">学号/工号</label>
+            <div class="layui-input-block">
+                <input type="text" name="id" readonly="readonly" class="layui-input">
+                <tip>此处不能修改</tip>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label required">姓名</label>
+            <div class="layui-input-block">
+                <input type="text" name="userName" lay-verify="required" lay-reqtext="姓名不能为空" placeholder="姓名" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label required">性别</label>
+            <div class="layui-input-block">
+                <input type="radio" name="gender" value=0 title="女‍🙋🏻‍♀️">
+                <input type="radio" name="gender" value=1 title="男🙋🏻‍♂️">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">邮箱</label>
+            <div class="layui-input-block">
+                <input type="email" name="email" placeholder="example@email.com" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">楼栋</label>
+            <div class="layui-input-block">
+                <input type="text" readonly="readonly" id="buildingId" class="layui-input">
+                <tip>如需调整请前往调宿换宿</tip>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">房间</label>
+            <div class="layui-input-block">
+                <input type="text" readonly="readonly" id="roomName" class="layui-input">
+                <tip>如需调整请前往调宿换宿</tip>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">角色</label>
+            <div class="layui-input-block">
+                <input type="text" readonly="readonly" id="userType" class="layui-input">
+                <tip>此处不能修改</tip>
+            </div>
+        </div>
+
+        <div class="layui-form-item" style="text-align: center;margin-top: 30px;">
+            <div class="layui-input-block">
+                <button class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn">确认保存</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+    layui.use(['form', 'layer', 'axios'], function () {
+        let form = layui.form,
+            layer = layui.layer,
+            axios = layui.axios,
+            $ = layui.$;
+
+        /**
+         * 初始化表单，要加上，不然刷新部分组件可能会不加载
+         */
+        form.render();
+
+        // 角色类型映射：学生=0；宿舍管理员=1；后勤中心=2
+        let userTypeMap = {0: '学生', 1: '宿管员', 2: '后勤中心'};
+
+        /**
+         * 获取当前登录用户信息（由后端Token拦截器解析token得到）
+         */
+        axios.get('student/info', {}).then(function (response) {
+            let user = response.data;
+            console.log(user);
+
+            $('input[name="id"]').val(user.id);
+            $('input[name="userName"]').val(user.userName);
+            $('input[name="email"]').val(user.email);
+            $('input[name="gender"][value="' + user.gender + '"]').prop('checked', true);
+            $('#userType').val(userTypeMap[user.userType] || '未知');
+
+            // 房间信息可能为空（如后勤中心账号），需做兜底处理
+            if (user.room) {
+                $('#buildingId').val(user.room.buildingId ? user.room.buildingId + '栋' : '-');
+                $('#roomName').val(user.room.brand || '-');
+            } else {
+                $('#buildingId').val('-');
+                $('#roomName').val('-');
+            }
+
+            form.render();
+        }).catch(function (error) {
+            console.log(error);
+        });
+
+        //监听提交（updateSelective只更新非空字段，房间和角色未提交故不会被修改）
+        form.on('submit(saveBtn)', function (data) {
+            axios.post('user/update', data.field).then(function (response) {
+                layer.msg('资料保存成功');
+            }).catch(function (error) {
+                layer.msg(error || '资料保存失败');
+            });
+            return false;
+        });
+
+    });
+</script>

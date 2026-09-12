@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>哈信息宿舍综合管理平台</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="Access-Control-Allow-Origin" content="*">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="icon" href="../images/newlogo.svg">
+    <link rel="stylesheet" href="../lib/layui-v2.5.5/css/layui.css" media="all">
+
+    <!--[if lt IE 9]>
+    <script src="https://cdn.staticfile.org/html5shiv/r29/html5.min.js"></script>
+    <script src="https://cdn.staticfile.org/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { height: 100%; }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #f0f2f5;
+        }
+
+        /* ---- 登录卡片 ---- */
+        .login-card {
+            width: 400px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.06);
+            padding: 0 0 36px;
+            position: relative;
+        }
+
+        /* ---- 圆形 Logo ---- */
+        .logo-area {
+            display: flex;
+            justify-content: center;
+            padding-top: 36px;
+        }
+        .logo-area img {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            object-fit: contain;
+            background: #fff;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
+        /* ---- 标题 ---- */
+        .card-title {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            letter-spacing: 2px;
+        }
+
+        /* ---- 表单区域 ---- */
+        .login-body {
+            padding: 32px 40px 0;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+            position: relative;
+        }
+
+        /* 输入框容器 —— 带左侧图标 */
+        .input-with-icon {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .input-with-icon .icon {
+            position: absolute;
+            left: 14px;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .input-with-icon .icon svg {
+            width: 18px;
+            height: 18px;
+            fill: #b0b8c4;
+        }
+
+        .input-with-icon input,
+        .input-with-icon .layui-form-select {
+            width: 100%;
+        }
+        .input-with-icon input {
+            height: 44px;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 0 14px 0 42px;
+            font-size: 14px;
+            color: #333;
+            background: #f7f8fa;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .input-with-icon input:focus {
+            border-color: #1677ff;
+            background: #fff;
+        }
+        .input-with-icon input::placeholder {
+            color: #c0c4cc;
+        }
+
+        /* 密码切换按钮 */
+        .pwd-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #b0b8c4;
+            font-size: 13px;
+            user-select: none;
+            z-index: 2;
+        }
+        .pwd-toggle:hover { color: #1677ff; }
+
+        /* layui select 覆盖 */
+        .input-with-icon .layui-form-select .layui-input {
+            height: 44px !important;
+            border-radius: 8px !important;
+            border: 1px solid #e8e8e8 !important;
+            background: #f7f8fa !important;
+            padding: 0 14px 0 42px !important;
+            font-size: 14px !important;
+        }
+        .input-with-icon .layui-form-select .layui-input:focus {
+            border-color: #1677ff !important;
+            background: #fff !important;
+        }
+        .input-with-icon .layui-form-select dl {
+            border-radius: 8px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+        }
+        .input-with-icon .layui-form-select dl dd.layui-this {
+            background: #e6f4ff !important;
+            color: #1677ff !important;
+        }
+        .input-with-icon .layui-form-select .layui-edge {
+            border-top-color: #b0b8c4 !important;
+        }
+
+        /* ---- 登录按钮 ---- */
+        .login-btn {
+            width: 100%;
+            height: 44px;
+            background: #1677ff;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+            letter-spacing: 4px;
+            cursor: pointer;
+            margin-top: 6px;
+            transition: background 0.2s;
+        }
+        .login-btn:hover { background: #4096ff; }
+        .login-btn:active { background: #0958d9; }
+
+        /* ---- 注册相关 ---- */
+        .register-card { display: none; }
+        .register-link {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 13px;
+            color: #999;
+        }
+        .register-link a {
+            color: #1677ff;
+            cursor: pointer;
+            margin-left: 4px;
+        }
+        .register-link a:hover { text-decoration: underline; }
+        .register-tip {
+            text-align: center;
+            margin-top: 14px;
+            font-size: 12px;
+            color: #b0b8c4;
+        }
+
+        /* ---- 底部版权 ---- */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            padding: 14px 0;
+            color: #aaa;
+            font-size: 13px;
+        }
+
+        @media screen and (max-width: 440px) {
+            .login-card { width: 92vw !important; }
+            .login-body { padding: 28px 24px 0 !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-card" id="loginCard">
+
+    <!-- 圆形 Logo -->
+    <div class="logo-area">
+        <img src="https://img9.greathiit.com/nopage/icon.png" alt="logo">
+    </div>
+
+    <!-- 系统标题 -->
+    <div class="card-title">哈信息宿舍综合管理平台</div>
+
+    <!-- 登录表单 -->
+    <form class="layui-form login-body" lay-filter="loginForm">
+
+        <!-- 账号 -->
+        <div class="form-group">
+            <div class="input-with-icon">
+                <span class="icon">
+                    <svg viewBox="0 0 1024 1024"><path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 160c70.7 0 128 57.3 128 128s-57.3 128-128 128-128-57.3-128-128 57.3-128 128-128zm0 608c-119.2 0-224.3-60.7-286.7-152.7C227.2 616.3 409.6 576 512 576s284.8 40.3 286.7 79.3C736.3 771.3 631.2 832 512 832z"/></svg>
+                </span>
+                <input type="text" name="userName" lay-verify="required" autocomplete="off" placeholder="请输入登录账号" maxlength="24"/>
+            </div>
+        </div>
+
+        <!-- 密码 -->
+        <div class="form-group">
+            <div class="input-with-icon">
+                <span class="icon">
+                    <svg viewBox="0 0 1024 1024"><path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 704c-17.7 0-32-14.3-32-32V544c0-17.7 14.3-32 32-32s32 14.3 32 32v192c0 17.7-14.3 32-32 32zm0-384c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z"/></svg>
+                </span>
+                <input type="password" name="userPwd" lay-verify="required" autocomplete="off" placeholder="请输入密码" maxlength="20">
+                <span class="pwd-toggle" id="pwdToggle">显示</span>
+            </div>
+        </div>
+
+        <!-- 角色 -->
+        <div class="form-group">
+            <div class="input-with-icon">
+                <span class="icon">
+                    <svg viewBox="0 0 1024 1024"><path d="M858.5 763.6c-18.9-44.8-46.1-85-80.6-119.5-34.5-34.5-74.7-61.6-119.5-80.6-0.4-0.2-0.8-0.3-1.2-0.5C719.5 518 760 444.7 760 362c0-137-111-248-248-248S264 225 264 362c0 82.7 40.5 156 102.8 201.1-0.4 0.2-0.8 0.3-1.2 0.5-44.8 18.9-85 46-119.5 80.6-34.5 34.5-61.6 74.7-80.6 119.5C146.9 807.5 137 854 136 902c-0.3 15.7 12.1 28.7 27.8 28.9H860c15.7-0.3 28.2-13.2 27.8-28.9-1-48-10.9-94.5-29.3-138.4zM512 170c105.9 0 192 86.1 192 192s-86.1 192-192 192-192-86.1-192-192 86.1-192 192-192z"/></svg>
+                </span>
+                <select name="userType" lay-verify="required" lay-filter="userType">
+                    <option value="">请选择登录角色</option>
+                    <option value="0">学生</option>
+                    <option value="1">宿管员</option>
+                    <option value="2">后勤中心</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 登录按钮 -->
+        <div class="layui-form-item" style="margin:0;">
+            <button class="login-btn" lay-submit="" lay-filter="login">登 录</button>
+        </div>
+
+        <!-- 注册入口 -->
+        <div class="register-link">
+            还没有账号？<a id="toRegister">立即注册</a>
+        </div>
+
+    </form>
+</div>
+
+<!-- 注册卡片 -->
+<div class="login-card register-card" id="registerCard">
+
+    <!-- 圆形 Logo -->
+    <div class="logo-area">
+        <img src="https://img9.greathiit.com/nopage/icon.png" alt="logo">
+    </div>
+
+    <!-- 卡片标题 -->
+    <div class="card-title">注册新账号</div>
+
+    <!-- 注册表单 -->
+    <form class="layui-form login-body" lay-filter="registerForm">
+
+        <!-- 账号 -->
+        <div class="form-group">
+            <div class="input-with-icon">
+                <span class="icon">
+                    <svg viewBox="0 0 1024 1024"><path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 160c70.7 0 128 57.3 128 128s-57.3 128-128 128-128-57.3-128-128 57.3-128 128-128zm0 608c-119.2 0-224.3-60.7-286.7-152.7C227.2 616.3 409.6 576 512 576s284.8 40.3 286.7 79.3C736.3 771.3 631.2 832 512 832z"/></svg>
+                </span>
+                <input type="text" name="regUserName" lay-verify="required" autocomplete="off" placeholder="请设置登录账号" maxlength="24"/>
+            </div>
+        </div>
+
+        <!-- 密码 -->
+        <div class="form-group">
+            <div class="input-with-icon">
+                <span class="icon">
+                    <svg viewBox="0 0 1024 1024"><path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 704c-17.7 0-32-14.3-32-32V544c0-17.7 14.3-32 32-32s32 14.3 32 32v192c0 17.7-14.3 32-32 32zm0-384c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z"/></svg>
+                </span>
+                <input type="password" name="regUserPwd" lay-verify="required" autocomplete="off" placeholder="请设置密码（至少6位）" maxlength="20">
+            </div>
+        </div>
+
+        <!-- 确认密码 -->
+        <div class="form-group">
+            <div class="input-with-icon">
+                <span class="icon">
+                    <svg viewBox="0 0 1024 1024"><path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 704c-17.7 0-32-14.3-32-32V544c0-17.7 14.3-32 32-32s32 14.3 32 32v192c0 17.7-14.3 32-32 32zm0-384c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z"/></svg>
+                </span>
+                <input type="password" name="regConfirmPwd" lay-verify="required" autocomplete="off" placeholder="请再次输入密码" maxlength="20">
+            </div>
+        </div>
+
+        <!-- 注册按钮 -->
+        <div class="layui-form-item" style="margin:0;">
+            <button class="login-btn" lay-submit="" lay-filter="register">注 册</button>
+        </div>
+
+        <div class="register-tip">注册后默认为学生身份</div>
+
+        <!-- 返回登录 -->
+        <div class="register-link">
+            已有账号？<a id="toLogin">返回登录</a>
+        </div>
+
+    </form>
+</div>
+
+<div class="footer">
+    © bokexin 2025-2026
+</div>
+
+<script src="../lib/layui-v2.5.5/layui.js" charset="utf-8"></script>
+<script src="../js/lay-config.js" charset="utf-8"></script>
+<script>
+    layui.use(['form', 'jquery', 'axios', 'layer', 'storage'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            layer = layui.layer,
+            axios = layui.axios,
+            storage = layui.storage;
+
+        // 登录过期的时候，跳出ifram框架
+        if (top.location != self.location) top.location = self.location;
+
+        // 密码显示/隐藏切换
+        $('#pwdToggle').on('click', function () {
+            var $input = $("input[name='userPwd']");
+            if ($input.attr('type') === 'password') {
+                $input.attr('type', 'text');
+                $(this).text('隐藏');
+            } else {
+                $input.attr('type', 'password');
+                $(this).text('显示');
+            }
+        });
+
+        // 切换到注册卡片
+        $('#toRegister').on('click', function () {
+            $('#loginCard').hide();
+            $('#registerCard').show();
+        });
+
+        // 返回登录卡片
+        $('#toLogin').on('click', function () {
+            $('#registerCard').hide();
+            $('#loginCard').show();
+        });
+
+        // 进行注册操作
+        form.on('submit(register)', function (data) {
+            var field = data.field;
+
+            if (field.regUserPwd.length < 6) {
+                layer.msg('密码至少要6位哦，换一个更保险的吧');
+                return false;
+            }
+            if (field.regUserPwd !== field.regConfirmPwd) {
+                layer.msg('两次输入的密码不一样，再检查一下哦');
+                return false;
+            }
+
+            axios({
+                method: 'post',
+                url: '/register',
+                data: {
+                    userName: field.regUserName,
+                    userPwd: field.regUserPwd
+                }
+            }).then(function (res) {
+                if(res.code === 200){
+                    // 注册成功：回到登录页，自动填好账号并选中学生身份
+                    $('#registerCard').hide();
+                    $('#loginCard').show();
+                    $("input[name='userName']").val(field.regUserName);
+                    $("select[name='userType']").val(0);
+                    form.render('select');
+                    layer.msg('注册成功，请使用学生身份登录');
+                }else {
+                    layer.msg(res.msg);
+                }
+            }).catch(function (error) {
+                layer.msg(error);
+            });
+
+            return false;
+        });
+
+        // 进行登录操作
+        form.on('submit(login)', function (data) {
+            data = data.field;
+
+            axios({
+                method: 'post',
+                url: '/login',
+                data: data
+            }).then(function (data) {
+                if(data.code === 200){
+                    storage.setToken(data.data.token);
+                    location.href='index.html';
+                }else {
+                    layer.msg(data.msg);
+                }
+            }).catch(function (error) {
+                layer.msg(error);
+            });
+
+            return false;
+        });
+    });
+</script>
+</body>
+</html>
