@@ -16,9 +16,9 @@
 		<result column="paid"  property="paid"/>
 	</resultMap>
 
-	<insert id="create" parameterType="com.silk.entity.Bill">
+	<!-- id由数据库自增生成，不再手动传入 -->
+	<insert id="create" useGeneratedKeys="true" keyProperty="id" parameterType="com.silk.entity.Bill">
 		insert into tb_bill(
-			id,
 		    bill_year,
 		    bill_month,
 			building_id,
@@ -30,7 +30,6 @@
 			total_fee,
 		    paid
 		)values(
-			#{id},
 		    #{billYear},
 		    #{billMonth},
 			#{buildingId},
@@ -43,7 +42,7 @@
 		    #{paid}
 		)
 	</insert>
-
+	
 	<select id="query" resultMap="Bill">
 		select * from tb_bill
 		<include refid="BillFindCriteria"/>
@@ -77,20 +76,22 @@
 	</update>
 
 	<update id="updateSelective">
-		update tb_bill set
-			<if test="billYear != null">bill_year = #{billYear}</if>,
-			<if test="billMonth != null">bill_month = #{billMonth}</if>,
-			<if test="buildingId != null">building_id = #{buildingId}</if>,
-			<if test="roomId != null">room_id = #{roomId}</if>,
-			<if test="waterUsed != null">water_used = #{waterUsed}</if>,
-			<if test="waterFee != null">water_fee = #{waterFee}</if>,
-			<if test="energyUsed != null">energy_used = #{energyUsed}</if>,
-			<if test="energyFee != null">energy_fee = #{energyFee}</if>,
-			<if test="totalFee != null">total_fee = #{totalFee}</if>,
-			<if test="paid != null">paid = #{paid}</if>,
+		update tb_bill
+		<set>
+			<if test="billYear != null">bill_year = #{billYear},</if>
+			<if test="billMonth != null">bill_month = #{billMonth},</if>
+			<if test="buildingId != null">building_id = #{buildingId},</if>
+			<if test="roomId != null">room_id = #{roomId},</if>
+			<if test="waterUsed != null">water_used = #{waterUsed},</if>
+			<if test="waterFee != null">water_fee = #{waterFee},</if>
+			<if test="energyUsed != null">energy_used = #{energyUsed},</if>
+			<if test="energyFee != null">energy_fee = #{energyFee},</if>
+			<if test="totalFee != null">total_fee = #{totalFee},</if>
+			<if test="paid != null">paid = #{paid},</if>
+		</set>
 		where id = #{id}
 	</update>
-
+	
 	<sql id="BillFindCriteria">
 		<where>
 			<if test="id != null">and id = #{id}</if>
@@ -98,6 +99,10 @@
 			<if test="billMonth != null">and bill_month = #{billMonth}</if>
 			<if test="buildingId != null">and building_id = #{buildingId}</if>
 			<if test="roomId != null">and room_id = #{roomId}</if>
+			<if test="buildingIds != null and buildingIds.size() > 0">
+			and building_id in
+			<foreach collection="buildingIds" item="buildingIdItem" open="(" separator="," close=")">#{buildingIdItem}</foreach>
+			</if>
 			<if test="waterUsed != null">and water_used = #{waterUsed}</if>
 			<if test="waterFee != null">and water_fee = #{waterFee}</if>
 			<if test="energyUsed != null">and energy_used = #{energyUsed}</if>
@@ -106,23 +111,23 @@
 			<if test="paid != null">and paid = #{paid}</if>
 		</where>
 	</sql>
+	
 
 
-
-	<!-- 1. 付款情况 -->
-	<!-- 本月水电账单尚未付款的房间数量 -->
+	<!-- 1. 账单状态统计（paid：未生成=0；已推送=1；已支付=2） -->
+	<!-- 已生成但尚未推送的账单数量 -->
 	<select id="notPaidAmount" resultType="int">
 		select count(paid) from tb_bill where paid=0 and building_id = #{buildingId}
 	</select>
-	<!-- 本月水电账单已经付款的房间数量 -->
+	<!-- 已推送给学生、待支付的账单数量 -->
 	<select id="havePaidAmount" resultType="int">
 		select count(paid) from tb_bill where paid=1 and building_id = #{buildingId}
 	</select>
-	<!-- 更早水电账单仍有拖欠的房间数量 -->
+	<!-- 学生已支付完成的账单数量 -->
 	<select id="delayPaidAmount" resultType="int">
 		select count(paid) from tb_bill where paid=2 and building_id = #{buildingId}
 	</select>
-
+	
 
 	<!-- 2. 水电量、水电费 -->
 	<!-- 本月整栋楼用水量 -->

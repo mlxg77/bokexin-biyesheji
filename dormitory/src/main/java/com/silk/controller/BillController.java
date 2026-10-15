@@ -18,8 +18,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 
 /**
@@ -79,8 +81,195 @@ public class BillController {
         PageInfo<Bill> pageInfo = billService.query(bill);
         return Result.ok(pageInfo);
     }
-
-
+    
+    
+    /*
+     * 账单状态约定：未生成=0（学生已生成，等待宿管员推送）；已推送=1（待学生支付）；已支付=2
+     */
+    
+    
+    //  学生端：随机生成本人寝室当月的水电账单（水5元/吨，电1元/度，用量随机）
+    @PostMapping("generate")
+    public Result generate(@RequestBody Bill bill, HttpServletRequest request){
+        User param = (User)request.getAttribute("user");                // 获取发起当前操作的学生信息
+    
+        if (param.getUserType() == null || param.getUserType() != 0){
+            return Result.fail("只有学生身份才能生成水电账单哦");
+        }
+    
+        User student = userService.detail(param.getId());              // 从数据库获取该学生的最新信息
+        Room room = roomService.detail(student.getRoomId());           // 该学生所在的寝室
+        if (room == null){
+            return Result.fail("您还没有分配宿舍房间，分配房间后再来生成账单吧");
+        }
+    
+        // 未指定年月时默认生成当前月份的账单
+        Calendar calendar = Calendar.getInstance();
+        int billYear = (bill != null && bill.getBillYear() != null) ? bill.getBillYear() : calendar.get(Calendar.YEAR);
+        int billMonth = (bill != null && bill.getBillMonth() != null) ? bill.getBillMonth() : calendar.get(Calendar.MONTH) + 1;
+    
+        // 同一寝室同一年同一月只能生成一张账单，防止重复生成
+        Bill check = new Bill();
+        check.setBillYear(billYear);
+        check.setBillMonth(billMonth);
+        check.setRoomId(room.getId());
+        if (billService.count(check) > 0){
+            return Result.fail(billYear + "年" + billMonth + "月的账单已经生成过啦，不用重复生成哦");
+        }
+    
+        // 随机生成用量：用水1~10吨（保留1位小数），用电10~100度
+        Random random = new Random();
+        double waterUsed = Math.round((1 + random.nextDouble() * 9) * 10) / 10.0;
+        double energyUsed = 10 + random.nextInt(91);
+    
+        // 按单价计算费用：水5元/吨，电1元/度（四舍五入保留两位小数）
+        double waterFee = new BigDecimal(waterUsed * 5).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+        double energyFee = new BigDecimal(energyUsed * 1).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+        double totalFee = new BigDecimal(waterFee + energyFee).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+    
+        // 打包账单信息并插入数据库
+        Bill newBill = new Bill();
+        newBill.setBillYear(billYear);
+        newBill.setBillMonth(billMonth);
+        newBill.setBuildingId(room.getBuildingId());
+        newBill.setRoomId(room.getId());
+        newBill.setWaterUsed(waterUsed);
+        newBill.setWaterFee(waterFee);
+        newBill.setEnergyUsed(energyUsed);
+        newBill.setEnergyFee(energyFee);
+        newBill.setTotalFee(totalFee);
+        newBill.setPaid(0);                                            // 0：未生成状态（等待宿管员推送）
+    
+        int flag = billService.create(newBill);
+        if(flag>0){
+            return Result.ok("账单生成成功，等宿管员推送后就能支付啦", newBill);
+        }else{
+            return Result.fail("账单生成失败了，请稍后再试");
+        }
+    }
+    
+    
+    //  学生端：查询自己寝室的水电账单（只能看到自己寝室的）
+    @PostMapping("query_my")
+    public Map<String,Object> queryMy(@RequestBody Bill bill, HttpServletRequest request){
+        User param = (User)request.getAttribute("user");                // 获取发起当前操作的学生信息
+    
+        User student = userService.detail(param.getId());
+        Room room = roomService.detail(student.getRoomId());
+        if (room == null){                                             // 未分配房间时返回空列表
+            return Result.ok(new PageInfo<Bill>(new ArrayList<Bill>()));
+        }
+    
+        bill.setRoomId(room.getId());                                  // 强制限定为本人寝室，防止查询他人账单
+        PageInfo<Bill> pageInfo = billService.query(bill);
+        pageInfo.getList().forEach(entity->{
+            entity.setBuilding(buildingService.detail(entity.getBuildingId()));
+            entity.setRoom(roomService.detail(entity.getRoomId()));
+        });
+        return Result.ok(pageInfo);
+    }
+    
+    
+    //  宿管员端：查询自己管理的所有楼栋的账单
+    @PostMapping("dorm_query")
+    public Map<String,Object> dormQuery(@RequestBody Bill bill, HttpServletRequest request){
+        User param = (User)request.getAttribute("user");                // 获取发起当前操作的宿管员信息
+    
+        if (param.getUserType() == null || param.getUserType() == 0){   // 学生无权查看整栋账单
+            return Result.ok(new PageInfo<Bill>(new ArrayList<Bill>()));
+        }
+    
+        List<Integer> buildingIds = buildingService.queryDomersBuilding(param.getId());    // 该宿管员管理的所有楼栋
+        if (buildingIds == null || buildingIds.size() == 0){            // 未管理任何楼栋时返回空列表
+            return Result.ok(new PageInfo<Bill>(new ArrayList<Bill>()));
+        }
+    
+        bill.setBuildingIds(buildingIds);
+        PageInfo<Bill> pageInfo = billService.query(bill);
+        pageInfo.getList().forEach(entity->{
+            entity.setBuilding(buildingService.detail(entity.getBuildingId()));
+            entity.setRoom(roomService.detail(entity.getRoomId()));
+        });
+        return Result.ok(pageInfo);
+    }
+    
+    
+    //  宿管员端：把未生成状态的账单推送给学生（状态0 -> 1）
+    @PostMapping("push")
+    public Result push(@RequestBody Bill bill, HttpServletRequest request){
+        User param = (User)request.getAttribute("user");                // 获取发起当前操作的宿管员信息
+    
+        if (param.getUserType() == null || param.getUserType() != 1){
+            return Result.fail("只有宿管员才能推送账单哦");
+        }
+        if (bill.getId() == null){
+            return Result.fail("请先选择要推送的账单");
+        }
+    
+        Bill entity = billService.detail(bill.getId());
+        if (entity == null){
+            return Result.fail("没有找到这条账单，可能已被删除");
+        }
+        if (entity.getPaid() == null || entity.getPaid() != 0){
+            return Result.fail("只有未生成状态的账单才能推送哦");
+        }
+    
+        // 校验该账单所在楼栋是否由当前宿管员管理
+        List<Integer> buildingIds = buildingService.queryDomersBuilding(param.getId());
+        if (buildingIds == null || !buildingIds.contains(entity.getBuildingId())){
+            return Result.fail("这条账单不属于您管理的楼栋，不能推送哦");
+        }
+    
+        Bill up = new Bill();
+        up.setId(entity.getId());
+        up.setPaid(1);                                                  // 1：已推送，等待学生支付
+        int flag = billService.updateSelective(up);
+        if(flag>0){
+            return Result.ok("推送成功，学生看到账单后就能支付啦");
+        }else{
+            return Result.fail();
+        }
+    }
+    
+    
+    //  学生端：支付已推送的账单（状态1 -> 2）
+    @PostMapping("pay")
+    public Result pay(@RequestBody Bill bill, HttpServletRequest request){
+        User param = (User)request.getAttribute("user");                // 获取发起当前操作的学生信息
+    
+        if (param.getUserType() == null || param.getUserType() != 0){
+            return Result.fail("只有学生身份才能支付账单哦");
+        }
+        if (bill.getId() == null){
+            return Result.fail("请先选择要支付的账单");
+        }
+    
+        Bill entity = billService.detail(bill.getId());
+        if (entity == null){
+            return Result.fail("没有找到这条账单，可能已被删除");
+        }
+    
+        // 只能支付自己寝室的账单
+        User student = userService.detail(param.getId());
+        if (student.getRoomId() == null || !student.getRoomId().equals(entity.getRoomId())){
+            return Result.fail("只能支付自己寝室的账单哦");
+        }
+        if (entity.getPaid() == null || entity.getPaid() != 1){
+            return Result.fail("这条账单还没推送给您（或者已经付过啦），暂时不能支付哦");
+        }
+    
+        Bill up = new Bill();
+        up.setId(entity.getId());
+        up.setPaid(2);                                                  // 2：学生已支付
+        int flag = billService.updateSelective(up);
+        if(flag>0){
+            return Result.ok("支付成功，感谢配合！");
+        }else{
+            return Result.fail("支付失败了，请稍后再试");
+        }
+    }
+    
+    
     @GetMapping("/paid_info")
     public Result paidInfo(HttpServletRequest request){
         User param = (User)request.getAttribute("user");                // 获取发起当前操作的宿舍管理员信息

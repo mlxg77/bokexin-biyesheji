@@ -25,12 +25,20 @@ public class Bill extends Entity{
 	private Double energyUsed;
 	private Double energyFee;
 	private Double totalFee;
+	/**
+	 * 账单状态：未生成=0（学生已生成账单，等待宿管员推送）；已推送=1（待学生支付）；已支付=2
+	 */
 	private Integer paid;
 
 
 	private Room room;
 	private Building building;
 	private User user;
+
+	/**
+	 * @description 作用：一个宿管员可管理多栋楼，以List存储其管理的所有楼栋ID，用于查询这些楼栋的账单
+	 */
+	private List<Integer> buildingIds;
 
 
 
@@ -163,11 +171,19 @@ public class Bill extends Entity{
 	public User getUser() {
 		return user;
 	}
-
+	
 	public void setUser(User user) {
 		this.user = user;
 	}
-
+	
+	public List<Integer> getBuildingIds() {
+		return buildingIds;
+	}
+	
+	public void setBuildingIds(List<Integer> buildingIds) {
+		this.buildingIds = buildingIds;
+	}
+	
 
 
 }

@@ -263,9 +263,10 @@
                         // {value: billPaidInfo[0], name: '未缴费', itemStyle:{color: 'rgb(241, 153, 74)'}},
                         // {value: billPaidInfo[1], name: '已缴费', itemStyle:{color: 'rgb(100, 192, 121)'}},
                         // {value: billPaidInfo[2], name: '拖欠中', itemStyle:{color: 'rgb(218, 112, 214)'}},
-                        {value: billPaidInfo[0], name: '未缴费', itemStyle:{color: 'Plum'}},
-                        {value: billPaidInfo[1], name: '已缴费'},
-                        {value: billPaidInfo[2], name: '拖欠中'},
+                        // 账单状态：paid=0未生成（待推送）；paid=1已推送（待支付）；paid=2已支付
+                        {value: billPaidInfo[0], name: '待推送', itemStyle:{color: 'Plum'}},
+                        {value: billPaidInfo[1], name: '待支付'},
+                        {value: billPaidInfo[2], name: '已支付'},
                     ]
                 }]
             });
